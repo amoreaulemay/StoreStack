@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Simple store solution",
   "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
   "author": "Alexandre Moreau-Lemay <alexandre@unless.com> (unless.com)",
   "license": "MIT",
   "type": "module",
@@ -14,7 +15,11 @@
     "build": "tsc",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest --config jestconfig.json",
-    "prepare": "husky install"
+    "prepare": "husky install && yarn build",
+    "prepublishOnly": "yarn test && yarn eslint",
+    "preversion": "yarn eslint",
+    "version": "yarn format && git add -A src",
+    "postversion": "git push && git push --tags"
   },
   "devDependencies": {
     "@types/clone-deep": "^4.0.1",
