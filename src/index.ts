@@ -1,43 +1,43 @@
 declare global {
-    interface Window {
-        stores: StoreStack
-    }
+  interface Window {
+    stores: StoreStack
+  }
 }
 
 import cloneDeep from 'clone-deep'
 
 // Polyfill for browsers that don't support the native `structuredClone`.
-    ;(() => {
-    if (!('structuredClone' in window)) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        // eslint-disable-next-line no-global-assign
-        window.structuredClone = cloneDeep
-    }
+;(() => {
+  if (!('structuredClone' in window)) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    // eslint-disable-next-line no-global-assign
+    window.structuredClone = cloneDeep
+  }
 })()
 
 // Mark: Definition Interfaces
 export interface Observer<T> {
-    // eslint-disable-next-line no-unused-vars
-    update(subject: Store<T>): void
+  // eslint-disable-next-line no-unused-vars
+  update(subject: Store<T>): void
 }
 
 export interface Subject<T> {
-    readonly state: T
+  readonly state: T
 
-    // eslint-disable-next-line no-unused-vars
-    attach(observer: Observer<T>): void
+  // eslint-disable-next-line no-unused-vars
+  attach(observer: Observer<T>): void
 
-    // eslint-disable-next-line no-unused-vars
-    detach(observer: Observer<T>): void
+  // eslint-disable-next-line no-unused-vars
+  detach(observer: Observer<T>): void
 
-    notify(): void
+  notify(): void
 
-    // eslint-disable-next-line no-unused-vars
-    set(options: T): void
+  // eslint-disable-next-line no-unused-vars
+  set(options: T): void
 
-    // eslint-disable-next-line no-unused-vars
-    set(options: (prevState: T) => T): void
+  // eslint-disable-next-line no-unused-vars
+  set(options: (prevState: T) => T): void
 }
 
 // Mark: Custom Types
@@ -59,9 +59,9 @@ export type AnyStore = Store<any>
  * @final
  */
 export class DuplicateObserverError extends Error {
-    constructor() {
-        super('This observer is already attached to the store.')
-    }
+  constructor() {
+    super('This observer is already attached to the store.')
+  }
 }
 
 /**
@@ -70,9 +70,9 @@ export class DuplicateObserverError extends Error {
  * @final
  */
 export class UnknownObserverError extends Error {
-    constructor() {
-        super('Attempted removal of unattached observer.')
-    }
+  constructor() {
+    super('Attempted removal of unattached observer.')
+  }
 }
 
 /**
@@ -82,9 +82,9 @@ export class UnknownObserverError extends Error {
  * @final
  */
 export class MemoryAllocationError extends Error {
-    constructor() {
-        super('Attempted to insert store at already allocated memory address without explicit override.')
-    }
+  constructor() {
+    super('Attempted to insert store at already allocated memory address without explicit override.')
+  }
 }
 
 /**
@@ -93,9 +93,9 @@ export class MemoryAllocationError extends Error {
  * @final
  */
 export class NullPointerError extends Error {
-    constructor() {
-        super('Attempted to access unallocated memory address.')
-    }
+  constructor() {
+    super('Attempted to access unallocated memory address.')
+  }
 }
 
 // Mark: Store
@@ -103,101 +103,101 @@ export class NullPointerError extends Error {
  * A simple store that follows the Observer pattern.
  */
 export class Store<T> implements Subject<T> {
-    /**
-     * @internal
-     * List of all the observers attached to the store.
-     */
-    #observers: Observer<T>[] = []
+  /**
+   * @internal
+   * List of all the observers attached to the store.
+   */
+  #observers: Observer<T>[] = []
 
-    /**
-     * @internal
-     * The internal representation of state.
-     */
-    #state: T
+  /**
+   * @internal
+   * The internal representation of state.
+   */
+  #state: T
 
-    /**
-     * A deep copy of the internal state, to prevent referenced objects to be directly mutated.
-     *
-     * @remarks
-     * To mutate the state, use {@link Store.set}.
-     */
-    public get state(): T {
-        return window.structuredClone(this.#state) as T
+  /**
+   * A deep copy of the internal state, to prevent referenced objects to be directly mutated.
+   *
+   * @remarks
+   * To mutate the state, use {@link Store.set}.
+   */
+  public get state(): T {
+    return window.structuredClone(this.#state) as T
+  }
+
+  /**
+   * Convenience method to create a unique pointer.
+   *
+   * @returns A `Pointer`
+   */
+  static newPointer(): string {
+    return crypto.randomUUID()
+  }
+
+  /**
+   * Creates a new `Store` (aka {@link Subject}) that can be subscribed to, or observed for a state change.
+   */
+  constructor(state: T) {
+    this.#state = state
+  }
+
+  /**
+   * Attaches/subscribes a new {@link Observer} to the store.
+   *
+   * @param observer Subscribes a new {@link Observer} to the store.
+   * @throws {DuplicateObserverError} If the observer has already been attached.
+   */
+  public attach(observer: Observer<T>): void {
+    const isExist = this.#observers.includes(observer)
+    if (isExist) {
+      throw new DuplicateObserverError()
     }
 
-    /**
-     * Convenience method to create a unique pointer.
-     *
-     * @returns A `Pointer`
-     */
-    static newPointer(): string {
-        return crypto.randomUUID()
+    this.#observers.push(observer)
+  }
+
+  /**
+   * Detaches/unsubscribes an {@link Observer} from the store.
+   *
+   * @param observer The `Observer` to remove.
+   * @throws {UnknownObserverError} If the observer was non-existent in the store.
+   */
+  public detach(observer: Observer<T>): void {
+    const observerIndex = this.#observers.indexOf(observer)
+    if (observerIndex === -1) {
+      throw new UnknownObserverError()
     }
 
-    /**
-     * Creates a new `Store` (aka {@link Subject}) that can be subscribed to, or observed for a state change.
-     */
-    constructor(state: T) {
-        this.#state = state
+    this.#observers.splice(observerIndex, 1)
+  }
+
+  /**
+   * Notifies all the observers of a change. Will trigger automatically when the state is changed through
+   * {@link Store.set}, but it can be forced by calling this method directly.
+   */
+  public notify(): void {
+    for (const observer of this.#observers) {
+      observer.update(this)
+    }
+  }
+
+  /**
+   * Method to mutate the internal state. If a value is directly provided, assign the internal state to that value.
+   * A function can also be provided to access a dereferenced copy of the previous state.
+   *
+   * @param options A value, or function to access the previous state.
+   */
+  // eslint-disable-next-line no-unused-vars
+  public set(options: T | ((prevState: T) => T)): void {
+    if (typeof options === 'function') {
+      // eslint-disable-next-line no-unused-vars
+      this.#state = window.structuredClone((options as (prevState: T) => T)(window.structuredClone(this.state) as T)) as T
+    } else {
+      this.#state = window.structuredClone(options) as T
     }
 
-    /**
-     * Attaches/subscribes a new {@link Observer} to the store.
-     *
-     * @param observer Subscribes a new {@link Observer} to the store.
-     * @throws {DuplicateObserverError} If the observer has already been attached.
-     */
-    public attach(observer: Observer<T>): void {
-        const isExist = this.#observers.includes(observer)
-        if (isExist) {
-            throw new DuplicateObserverError()
-        }
-
-        this.#observers.push(observer)
-    }
-
-    /**
-     * Detaches/unsubscribes an {@link Observer} from the store.
-     *
-     * @param observer The `Observer` to remove.
-     * @throws {UnknownObserverError} If the observer was non-existent in the store.
-     */
-    public detach(observer: Observer<T>): void {
-        const observerIndex = this.#observers.indexOf(observer)
-        if (observerIndex === -1) {
-            throw new UnknownObserverError()
-        }
-
-        this.#observers.splice(observerIndex, 1)
-    }
-
-    /**
-     * Notifies all the observers of a change. Will trigger automatically when the state is changed through
-     * {@link Store.set}, but it can be forced by calling this method directly.
-     */
-    public notify(): void {
-        for (const observer of this.#observers) {
-            observer.update(this)
-        }
-    }
-
-    /**
-     * Method to mutate the internal state. If a value is directly provided, assign the internal state to that value.
-     * A function can also be provided to access a dereferenced copy of the previous state.
-     *
-     * @param options A value, or function to access the previous state.
-     */
-    // eslint-disable-next-line no-unused-vars
-    public set(options: T | ((prevState: T) => T)): void {
-        if (typeof options === 'function') {
-            // eslint-disable-next-line no-unused-vars
-            this.#state = window.structuredClone((options as (prevState: T) => T)(window.structuredClone(this.state) as T)) as T
-        } else {
-            this.#state = window.structuredClone(options) as T
-        }
-
-        this.notify()
-    }
+    this.notify()
+  }
 }
 
 // Mark: useStore Options
@@ -206,64 +206,64 @@ export class Store<T> implements Subject<T> {
  * The options to create a store.
  */
 export interface StoreOptions<T> {
-    /**
-     * A key or "pointer" to the store location in `window.stores`.
-     *
-     * ### Remarks
-     * If no pointer is provided, it will be automatically generated and the function will return the pointer as a `string`.
-     *
-     * **@optional**
-     */
-    pointer?: Pointer
+  /**
+   * A key or "pointer" to the store location in `window.stores`.
+   *
+   * ### Remarks
+   * If no pointer is provided, it will be automatically generated and the function will return the pointer as a `string`.
+   *
+   * **@optional**
+   */
+  pointer?: Pointer
 
-    /**
-     * A "free" observer already configured. Will execute the callback when the state change.
-     *
-     * @optional
-     */
-    // eslint-disable-next-line no-unused-vars
-    onChange?: (state: T) => void
+  /**
+   * A "free" observer already configured. Will execute the callback when the state change.
+   *
+   * @optional
+   */
+  // eslint-disable-next-line no-unused-vars
+  onChange?: (state: T) => void
 
-    /**
-     * Additional observers that need to be attached to the store.
-     *
-     * @optional
-     */
-    observers?: Observer<T>[]
+  /**
+   * Additional observers that need to be attached to the store.
+   *
+   * @optional
+   */
+  observers?: Observer<T>[]
 
-    /**
-     * If set to true, will override the store at the pointer's address if it exists.
-     *
-     * *Has no effect if the address is unallocated.*
-     *
-     * @default undefined
-     * @optional
-     */
-    override?: boolean
+  /**
+   * If set to true, will override the store at the pointer's address if it exists.
+   *
+   * *Has no effect if the address is unallocated.*
+   *
+   * @default undefined
+   * @optional
+   */
+  override?: boolean
 
-    /**
-     * See {@link StoreOptionsErrorHandling}
-     */
-    errorHandling?: StoreOptionsErrorHandling
+  /**
+   * See {@link StoreOptionsErrorHandling}
+   */
+  errorHandling?: StoreOptionsErrorHandling
 }
 
 /**
  * Defines how {@link useStore} should handle errors.
  */
 export interface StoreOptionsErrorHandling {
-    /**
-     * Set to `true` if error messages should be outputted to the console.
-     *
-     * `verbose` is set to `false` by default.
-     */
-    verbose?: boolean
+  /**
+   * Set to `true` if error messages should be outputted to the console.
+   *
+   * `verbose` is set to `false` by default.
+   */
+  verbose?: boolean
 
-    /**
-     * By default {@link useStore} will silently ignore errors to allow the program to
-     * continue its execution. If `stopOnError` is set to `true`, the function will stop
-     * if an error is thrown and will rethrow it.
-     */
-    stopOnError?: boolean
+  /**
+   * By default {@link useStore} will silently ignore errors to allow the program to
+   * continue its execution. If `stopOnError` is set to `true`, the function will stop
+   * if an error is thrown and will rethrow it.
+   */
+  stopOnError?: boolean
 }
 
 // Mark: useStore
@@ -297,72 +297,72 @@ export interface StoreOptionsErrorHandling {
  * @returns The {@link Pointer} to the location of the store.
  */
 export function useStore<T>(state: T, options?: StoreOptions<T>): Pointer {
-    if (typeof options === 'object') {
-        // Options are provided
+  if (typeof options === 'object') {
+    // Options are provided
 
-        const pointer = options.pointer ?? crypto.randomUUID()
-        const callback = options.onChange ?? (() => null)
-        const observers = options.observers ?? []
-        const override = options.override ?? false
+    const pointer = options.pointer ?? crypto.randomUUID()
+    const callback = options.onChange ?? (() => null)
+    const observers = options.observers ?? []
+    const override = options.override ?? false
 
-        class StoreObserver implements Observer<T> {
-            public update(subject: Store<T>): void {
-                callback(subject.state)
-            }
-        }
-
-        observers.push(new StoreObserver())
-
-        if (override) {
-            // If a store exists at address, it will be overridden.
-
-            const store = new Store(state)
-
-            for (const observer of observers) {
-                try {
-                    store.attach(observer)
-                } catch (error) {
-                    if (options.errorHandling?.verbose === true) {
-                        console.error(error)
-                    }
-
-                    if (options.errorHandling?.stopOnError === true) {
-                        throw error
-                    }
-                }
-            }
-
-            Stores.addStoreAtPointer(store, pointer, {override: true})
-        } else {
-            // If a store exists at address, it will NOT be overridden, but additional observers will be attached to the store.
-
-            try {
-                Stores.upsert(state, pointer, ...observers)
-            } catch (error) {
-                if (options.errorHandling?.verbose === true) {
-                    console.error(error)
-                }
-
-                if (options.errorHandling?.stopOnError === true) {
-                    throw error
-                }
-            }
-        }
-
-        return pointer
-    } else {
-        // No options are provided
-
-        return Stores.addStore(new Store(state))
+    class StoreObserver implements Observer<T> {
+      public update(subject: Store<T>): void {
+        callback(subject.state)
+      }
     }
+
+    observers.push(new StoreObserver())
+
+    if (override) {
+      // If a store exists at address, it will be overridden.
+
+      const store = new Store(state)
+
+      for (const observer of observers) {
+        try {
+          store.attach(observer)
+        } catch (error) {
+          if (options.errorHandling?.verbose === true) {
+            console.error(error)
+          }
+
+          if (options.errorHandling?.stopOnError === true) {
+            throw error
+          }
+        }
+      }
+
+      Stores.addStoreAtPointer(store, pointer, {override: true})
+    } else {
+      // If a store exists at address, it will NOT be overridden, but additional observers will be attached to the store.
+
+      try {
+        Stores.upsert(state, pointer, ...observers)
+      } catch (error) {
+        if (options.errorHandling?.verbose === true) {
+          console.error(error)
+        }
+
+        if (options.errorHandling?.stopOnError === true) {
+          throw error
+        }
+      }
+    }
+
+    return pointer
+  } else {
+    // No options are provided
+
+    return Stores.addStore(new Store(state))
+  }
 }
 
 /**
  * Simple store observer implementation.
  */
 declare class StoreObserver implements Observer<unknown> {
-    // eslint-disable-next-line no-unused-vars
-    public update(subject: Store<unknown>): void
+  // eslint-disable-next-line no-unused-vars
+  public update(subject: Store<unknown>): void
 }
 
 /**
@@ -373,13 +373,13 @@ declare class StoreObserver implements Observer<unknown> {
  */
 // eslint-disable-next-line no-unused-vars
 export function useObserver<T = unknown>(callback: (prevState: T) => void): StoreObserver {
-    class _StoreObserver implements Observer<T> {
-        public update(subject: Store<T>): void {
-            callback(subject.state)
-        }
+  class _StoreObserver implements Observer<T> {
+    public update(subject: Store<T>): void {
+      callback(subject.state)
     }
+  }
 
-    return new _StoreObserver() as StoreObserver
+  return new _StoreObserver() as StoreObserver
 }
 
 // Mark: StoreStack
@@ -388,132 +388,132 @@ export function useObserver<T = unknown>(callback: (prevState: T) => void): Stor
  * Structure for the `Store` memory stack.
  */
 interface _StoreStack {
-    [key: Pointer]: AnyStore
+  [key: Pointer]: AnyStore
 }
 
 /**
  * A multi {@link Store} container.
  */
 export class StoreStack {
-    /**
-     * Checks if the `StoreStack` is instantiated on `window.stores` and creates it if it's not.
-     */
-    static configure(): void {
-        if (typeof window.stores === 'undefined' || !((window.stores as StoreStack | undefined) instanceof StoreStack)) {
-            window.stores = new StoreStack()
-        }
+  /**
+   * Checks if the `StoreStack` is instantiated on `window.stores` and creates it if it's not.
+   */
+  static configure(): void {
+    if (typeof window.stores === 'undefined' || !((window.stores as StoreStack | undefined) instanceof StoreStack)) {
+      window.stores = new StoreStack()
+    }
+  }
+
+  /**
+   * @internal
+   * Object containing all the stores.
+   */
+  #stores: _StoreStack = {}
+
+  /**
+   * Adds a store to the memory stack and assigns it a pointer.
+   *
+   * @param newItem The {@link Store} to be added to the stack.
+   * @returns The {@link Pointer} to the allocated memory for the store.
+   */
+  public addStore(newItem: AnyStore): Pointer {
+    const ptr = crypto.randomUUID()
+
+    this.#stores[ptr] = newItem
+    return ptr
+  }
+
+  /**
+   * Adds a store to the specified {@link Pointer}. If a store already exists at the address, an option can be passed to override it.
+   * If `override` is set to `false`, but the `verbose` option is set to true, and the memory is already allocated, the store will **NOT**
+   * be overridden, and an error message will output to the console.
+   *
+   * @param newItem The {@link Store} to be added to the stack.
+   * @param pointer The {@link Pointer} to the memory address where the store should be inserted.
+   * @param options Defines if a store should be overridden if it exists at the `Pointer` and if a verbose error should be returned if override is set to false.
+   *
+   * @throws {MemoryAllocationError} If the address is already allocated and `override` isn't set to `true`.
+   */
+  public addStoreAtPointer(newItem: AnyStore, pointer: Pointer, options?: {override?: boolean; verbose?: boolean}): void {
+    if (typeof this.#stores[pointer] !== 'undefined' && !options?.override) {
+      if (options?.verbose) {
+        console.error('Error: Cannot add store at pointer, address is already allocated.')
+      }
+
+      throw new MemoryAllocationError()
     }
 
-    /**
-     * @internal
-     * Object containing all the stores.
-     */
-    #stores: _StoreStack = {}
+    this.#stores[pointer] = newItem
+  }
 
-    /**
-     * Adds a store to the memory stack and assigns it a pointer.
-     *
-     * @param newItem The {@link Store} to be added to the stack.
-     * @returns The {@link Pointer} to the allocated memory for the store.
-     */
-    public addStore(newItem: AnyStore): Pointer {
-        const ptr = crypto.randomUUID()
-
-        this.#stores[ptr] = newItem
-        return ptr
+  /**
+   * This method makes sure a store if instantiated at the {@link Pointer}'s address.
+   * If no store is instantiated, it will create one holding the `defaultValue` provided.
+   * Otherwise, it will only attach {@link Observer Observers} if they are provided.
+   *
+   * @throws {DuplicateObserverError} If observer is duplicate.
+   *
+   * @param defaultValue A default state value to insert if a new store is created.
+   * @param pointer The {@link Pointer} to the memory address.
+   * @param observers {@link Observer Observers} to attach to the store.
+   */
+  public upsert<T>(defaultValue: T, pointer: Pointer, ...observers: Observer<T>[]): void {
+    if (typeof this.#stores[pointer] === 'undefined') {
+      this.#stores[pointer] = new Store(defaultValue)
     }
 
-    /**
-     * Adds a store to the specified {@link Pointer}. If a store already exists at the address, an option can be passed to override it.
-     * If `override` is set to `false`, but the `verbose` option is set to true, and the memory is already allocated, the store will **NOT**
-     * be overridden, and an error message will output to the console.
-     *
-     * @param newItem The {@link Store} to be added to the stack.
-     * @param pointer The {@link Pointer} to the memory address where the store should be inserted.
-     * @param options Defines if a store should be overridden if it exists at the `Pointer` and if a verbose error should be returned if override is set to false.
-     *
-     * @throws {MemoryAllocationError} If the address is already allocated and `override` isn't set to `true`.
-     */
-    public addStoreAtPointer(newItem: AnyStore, pointer: Pointer, options?: {override?: boolean; verbose?: boolean}): void {
-        if (typeof this.#stores[pointer] !== 'undefined' && !options?.override) {
-            if (options?.verbose) {
-                console.error('Error: Cannot add store at pointer, address is already allocated.')
-            }
+    for (const observer of observers) {
+      // eslint-disable-next-line no-useless-catch
+      try {
+        this.#stores[pointer].attach(observer)
+      } catch (error) {
+        throw error
+      }
+    }
+  }
 
-            throw new MemoryAllocationError()
-        }
+  /**
+   * Removes a store from the memory stack. If the {@link Pointer}'s address is unallocated,
+   * it will output an error message to the `console` if `verbose` option is set to true.
+   *
+   * @param ptr The {@link Pointer}'s address of the store.
+   * @param options If the removal fails, should the function verbose it to the console? Defaults to false.
+   *
+   * @throws {NullPointerError} If attempting to delete a store at unallocated memory address.
+   */
+  public removeStore(ptr: Pointer, options?: {verbose?: boolean}): void {
+    if (typeof this.#stores[ptr] === 'undefined') {
+      if (options?.verbose) {
+        console.error('Error: The pointer address points to unallocated memory.')
+      }
 
-        this.#stores[pointer] = newItem
+      throw new NullPointerError()
     }
 
-    /**
-     * This method makes sure a store if instantiated at the {@link Pointer}'s address.
-     * If no store is instantiated, it will create one holding the `defaultValue` provided.
-     * Otherwise, it will only attach {@link Observer Observers} if they are provided.
-     *
-     * @throws {DuplicateObserverError} If observer is duplicate.
-     *
-     * @param defaultValue A default state value to insert if a new store is created.
-     * @param pointer The {@link Pointer} to the memory address.
-     * @param observers {@link Observer Observers} to attach to the store.
-     */
-    public upsert<T>(defaultValue: T, pointer: Pointer, ...observers: Observer<T>[]): void {
-        if (typeof this.#stores[pointer] === 'undefined') {
-            this.#stores[pointer] = new Store(defaultValue)
-        }
+    delete this.#stores[ptr]
+  }
 
-        for (const observer of observers) {
-            // eslint-disable-next-line no-useless-catch
-            try {
-                this.#stores[pointer].attach(observer)
-            } catch (error) {
-                throw error
-            }
-        }
+  /**
+   * Returns a reference to the store at the address if it exists, otherwise undefined. A type can be
+   * passed in order to make the return typed.
+   *
+   * ## Example
+   * ```typescript
+   * const ptr = useStore(0);
+   * console.log(Stores.get<number>(ptr).state); // Output: 0
+   * ```
+   *
+   * @param ptr The {@link Pointer} to the store.
+   * @returns The store if it exists
+   */
+  // eslint-disable-next-line
+  public get<T = any>(ptr: Pointer): Store<T> | undefined {
+    if (typeof this.#stores[ptr] !== 'undefined') {
+      return this.#stores[ptr] as Store<T>
     }
 
-    /**
-     * Removes a store from the memory stack. If the {@link Pointer}'s address is unallocated,
-     * it will output an error message to the `console` if `verbose` option is set to true.
-     *
-     * @param ptr The {@link Pointer}'s address of the store.
-     * @param options If the removal fails, should the function verbose it to the console? Defaults to false.
-     *
-     * @throws {NullPointerError} If attempting to delete a store at unallocated memory address.
-     */
-    public removeStore(ptr: Pointer, options?: {verbose?: boolean}): void {
-        if (typeof this.#stores[ptr] === 'undefined') {
-            if (options?.verbose) {
-                console.error('Error: The pointer address points to unallocated memory.')
-            }
-
-            throw new NullPointerError()
-        }
-
-        delete this.#stores[ptr]
-    }
-
-    /**
-     * Returns a reference to the store at the address if it exists, otherwise undefined. A type can be
-     * passed in order to make the return typed.
-     *
-     * ## Example
-     * ```typescript
-     * const ptr = useStore(0);
-     * console.log(Stores.get<number>(ptr).state); // Output: 0
-     * ```
-     *
-     * @param ptr The {@link Pointer} to the store.
-     * @returns The store if it exists
-     */
-    // eslint-disable-next-line
-    public get<T = any>(ptr: Pointer): Store<T> | undefined {
-        if (typeof this.#stores[ptr] !== 'undefined') {
-            return this.#stores[ptr] as Store<T>
-        }
-
-        return undefined
-    }
+    return undefined
+  }
 }
 
 // Mark: Stores
@@ -521,6 +521,6 @@ export class StoreStack {
  * Convenience constant, provide access to the global {@link StoreStack} and creates it if it doesn't exist.
  */
 export const Stores: StoreStack = (function () {
-    StoreStack.configure()
-    return window.stores
+  StoreStack.configure()
+  return window.stores
 })()
