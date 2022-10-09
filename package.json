@@ -1,6 +1,6 @@
 {
   "name": "storestack",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Simple store solution",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -19,7 +19,8 @@
     "prepublishOnly": "yarn test && yarn eslint",
     "preversion": "yarn eslint",
     "version": "yarn format && git add -A src",
-    "postversion": "git push && git push --tags"
+    "postversion": "git push && git push --tags",
+    "publish": "yarn version --patch && git add -A && git commit -m \"Updated version for publising\" && git push && npm publish"
   },
   "devDependencies": {
     "@types/clone-deep": "^4.0.1",
