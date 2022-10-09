@@ -3,21 +3,37 @@
   "version": "1.0.0",
   "description": "Simple store solution",
   "main": "./lib/index.js",
-  "author": "Alexandre Moreau-Lemay",
+  "author": "Alexandre Moreau-Lemay <alexandre@unless.com> (unless.com)",
   "license": "MIT",
   "dependencies": {
     "clone-deep": "^4.0.1"
   },
   "scripts": {
     "build": "tsc",
-    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\""
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "test": "jest --config jestconfig.json"
   },
   "devDependencies": {
     "@types/clone-deep": "^4.0.1",
+    "@types/jest": "^29.1.2",
     "@typescript-eslint/eslint-plugin": "^5.39.0",
     "@typescript-eslint/parser": "^5.39.0",
     "eslint": "^8.25.0",
+    "jest": "^29.1.2",
     "prettier": "^2.7.1",
+    "ts-jest": "^29.0.3",
     "typescript": "^4.8.4"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amoreaulemay/storestack"
+  },
+  "keywords": ["state management", "store", "multi-store"],
+  "bugs": {
+    "url": "https://github.com/amoreaulemay/storestack/issues"
+  },
+  "files": [
+    "lib/**/*"
+  ],
+  "homepage": "https://github.com/amoreaulemay/storestack#readme"
 }
