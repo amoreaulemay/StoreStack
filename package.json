@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "format": "prettier --write \"src/**/*.ts\"",
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest --config jestconfig.json",
     "prepare": "husky install && yarn build",
     "prepublishOnly": "yarn test && yarn eslint",
