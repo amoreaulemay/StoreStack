@@ -5,7 +5,7 @@ declare global {
 }
 
 import cloneDeep from 'clone-deep'
-import { nanoid } from 'nanoid'
+import {nanoid} from 'nanoid'
 
 // Polyfill for browsers that don't support the native `structuredClone`.
 ;(() => {
