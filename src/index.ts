@@ -5,6 +5,7 @@ declare global {
 }
 
 import cloneDeep from 'clone-deep'
+import { nanoid } from 'nanoid'
 
 // Polyfill for browsers that don't support the native `structuredClone`.
 ;(() => {
@@ -131,7 +132,7 @@ export class Store<T> implements Subject<T> {
    * @returns A `Pointer`
    */
   static newPointer(): string {
-    return crypto.randomUUID()
+    return nanoid()
   }
 
   /**
@@ -283,7 +284,7 @@ export interface StoreOptionsErrorHandling {
  * console.log(Stores.get<number>(store1Ptr).state); // Output: 0
  *
  * // 2. Creating a store with options
- * const store2Ptr = crypto.randomUUID();
+ * const store2Ptr = nanoid();
  * useStore(0, { pointer: store2Ptr, onChange: (state) => console.log(state), });
  *
  * console.log(Stores.get<number>(store2Ptr).state); // Output: 0
@@ -300,7 +301,7 @@ export function useStore<T>(state: T, options?: StoreOptions<T>): Pointer {
   if (typeof options === 'object') {
     // Options are provided
 
-    const pointer = options.pointer ?? crypto.randomUUID()
+    const pointer = options.pointer ?? nanoid()
     const callback = options.onChange ?? (() => null)
     const observers = options.observers ?? []
     const override = options.override ?? false
@@ -417,7 +418,7 @@ export class StoreStack {
    * @returns The {@link Pointer} to the allocated memory for the store.
    */
   public addStore(newItem: AnyStore): Pointer {
-    const ptr = crypto.randomUUID()
+    const ptr = nanoid()
 
     this.#stores[ptr] = newItem
     return ptr
