@@ -12,7 +12,7 @@
     "nanoid": "^4.0.0"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "swc src/index.ts -d lib && tsc --emitDeclarationOnly",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest --config jestconfig.json",
     "prepare": "husky install && yarn build",
@@ -23,18 +23,24 @@
     "publish": "yarn version --patch && git add -A && git commit -m \"Updated version for publising\" && git push && npm publish"
   },
   "devDependencies": {
+    "@swc/cli": "^0.1.57",
+    "@swc/core": "^1.3.6",
+    "@swc/jest": "^0.2.23",
     "@types/clone-deep": "^4.0.1",
     "@types/jest": "^29.1.2",
     "@typescript-eslint/eslint-plugin": "^5.39.0",
     "@typescript-eslint/parser": "^5.39.0",
     "core-js": "^3.25.5",
     "eslint": "^8.25.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
     "husky": ">=6",
     "jest": "^29.1.2",
     "jest-environment-jsdom": "^29.1.2",
     "lint-staged": ">=10",
     "prettier": "^2.7.1",
     "ts-jest": "^29.0.3",
+    "tsconfig-to-swcconfig": "^2.0.1",
     "typescript": "^4.8.4"
   },
   "repository": {

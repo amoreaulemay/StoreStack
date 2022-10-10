@@ -5,10 +5,7 @@
   },
   "transform": {
     "^.+\\.[tj]sx?$": [
-      "ts-jest",
-      {
-        "useESM": true
-      }
+      "@swc/jest"
     ]
   },
   "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
