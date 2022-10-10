@@ -384,13 +384,6 @@ export function useObserver<T = unknown>(callback: (prevState: T) => void): Stor
 }
 
 // Mark: StoreStack
-/**
- * @internal
- * Structure for the `Store` memory stack.
- */
-interface _StoreStack {
-  [key: Pointer]: AnyStore
-}
 
 /**
  * A multi {@link Store} container.
@@ -409,7 +402,7 @@ export class StoreStack {
    * @internal
    * Object containing all the stores.
    */
-  #stores: _StoreStack = {}
+  #stores: Record<Pointer, AnyStore> = {}
 
   /**
    * Adds a store to the memory stack and assigns it a pointer.
