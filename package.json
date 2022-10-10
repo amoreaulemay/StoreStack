@@ -1,6 +1,6 @@
 {
   "name": "storestack",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "Simple store solution",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -12,7 +12,7 @@
     "nanoid": "^4.0.0"
   },
   "scripts": {
-    "build": "swc src/index.ts -d lib && tsc --emitDeclarationOnly",
+    "build": "tsc",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest --config jestconfig.json",
     "prepare": "husky install && yarn build",
