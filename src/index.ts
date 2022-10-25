@@ -358,6 +358,23 @@ export function useStore<T>(state: T, options?: StoreOptions<T>): Pointer {
   }
 }
 
+export interface MultipleStoresOptions<T extends unknown> {
+  globalObservers?: Observer<T>[]
+  stores: Record<string, {defaultValue: T} & Omit<StoreOptions<T>, 'pointer'>>
+}
+
+export function useStores<T extends unknown>({globalObservers, stores}: MultipleStoresOptions<T>): void {
+  Object.keys(stores).forEach((key) => {
+    const obj = stores[key]
+
+    useStore(obj.defaultValue, {
+      ...obj,
+      pointer: key,
+      observers: obj.observers && globalObservers ? [...obj.observers, ...globalObservers] : [],
+    })
+  })
+}
+
 /**
  * Simple store observer implementation.
  */
