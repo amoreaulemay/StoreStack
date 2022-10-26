@@ -320,7 +320,7 @@ test('useObserver hooks', () => {
   const startValue = 0
   const finalValue = 1
   let counter = startValue
-  const callback = (prevState: number) => counter = prevState
+  const callback = (prevState: number) => (counter = prevState)
   const observer = mod.useObserver(callback)
   const store = new mod.Store(startValue)
 
@@ -341,7 +341,7 @@ test('useState', () => {
   const startValue = 0
   const finalValue = 1
   let counter = startValue
-  const callback = (prevState: number) => counter = prevState
+  const callback = (prevState: number) => (counter = prevState)
 
   const stack = mod.StoreStack.attach([mod.useObserver(callback)])
   const [value, setter] = stack.useState({pointer: 'test', defaultValue: startValue})

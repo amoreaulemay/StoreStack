@@ -9,7 +9,7 @@ import {nanoid} from 'nanoid'
 
 // Polyfill for browsers that don't support the native `structuredClone`.
 ;(() => {
-    /* istanbul ignore next */
+  /* istanbul ignore next */
   if (!('structuredClone' in window)) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
@@ -551,7 +551,17 @@ export class StoreStack {
    * @param observers Additional observers to attach to the store.
    * @param useGlobalObserver If global observers are enabled.
    */
-  public useState<T = any>({pointer, defaultValue, observers, useGlobalObserver}: {pointer: Pointer, defaultValue: T, observers?: Observer<T>[], useGlobalObserver?: boolean}): [() => T, (newState: T | SetterFunction<T>) => void] {
+  public useState<T = any>({
+    pointer,
+    defaultValue,
+    observers,
+    useGlobalObserver,
+  }: {
+    pointer: Pointer
+    defaultValue: T
+    observers?: Observer<T>[]
+    useGlobalObserver?: boolean
+  }): [() => T, (newState: T | SetterFunction<T>) => void] {
     const concatObservers = (() => {
       let temp: Observer<any>[] = []
       /* istanbul ignore next */
@@ -565,11 +575,11 @@ export class StoreStack {
       this.#stores[pointer] = new Store(defaultValue)
     }
 
-    concatObservers.forEach(observer => this.#stores[pointer].attach(observer, true))
+    concatObservers.forEach((observer) => this.#stores[pointer].attach(observer, true))
 
     const setter = (newState: T | SetterFunction<T>) => {
       if (typeof newState === 'function') {
-        return this.#stores[pointer].set((newState as ((prevState: T) => T))(window.structuredClone(this.#stores[pointer].state)))
+        return this.#stores[pointer].set((newState as (prevState: T) => T)(window.structuredClone(this.#stores[pointer].state)))
       } else {
         this.#stores[pointer].set(newState)
       }
