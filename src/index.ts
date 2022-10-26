@@ -9,6 +9,7 @@ import {nanoid} from 'nanoid'
 
 // Polyfill for browsers that don't support the native `structuredClone`.
 ;(() => {
+    /* istanbul ignore next */
   if (!('structuredClone' in window)) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
@@ -146,12 +147,15 @@ export class Store<T> implements Subject<T> {
    * Attaches/subscribes a new {@link Observer} to the store.
    *
    * @param observer Subscribes a new {@link Observer} to the store.
+   * @param skipOnExist If method should silently skip duplicate observers
    * @throws {DuplicateObserverError} If the observer has already been attached.
    */
-  public attach(observer: Observer<T>): void {
+  public attach(observer: Observer<T>, skipOnExist?: boolean): void {
     const isExist = this.#observers.includes(observer)
-    if (isExist) {
+    if (isExist && !skipOnExist) {
       throw new DuplicateObserverError()
+    } else if (isExist && skipOnExist) {
+      return
     }
 
     this.#observers.push(observer)
@@ -358,29 +362,19 @@ export function useStore<T>(state: T, options?: StoreOptions<T>): Pointer {
   }
 }
 
-export interface MultipleStoresOptions<T extends unknown> {
-  globalObservers?: Observer<T>[]
-  stores: Record<string, {defaultValue: T} & Omit<StoreOptions<T>, 'pointer'>>
-}
-
-export function useStores<T extends unknown>({globalObservers, stores}: MultipleStoresOptions<T>): void {
-  Object.keys(stores).forEach((key) => {
-    const obj = stores[key]
-
-    useStore(obj.defaultValue, {
-      ...obj,
-      pointer: key,
-      observers: obj.observers && globalObservers ? [...obj.observers, ...globalObservers] : [],
-    })
-  })
-}
-
 /**
  * Simple store observer implementation.
  */
-declare class StoreObserver implements Observer<unknown> {
+export class StoreObserver<T> implements Observer<T> {
+  #callback: (prevState: T) => void
+  constructor(callback: (prevState: T) => void) {
+    this.#callback = callback
+  }
+
   // eslint-disable-next-line no-unused-vars
-  public update(subject: Store<unknown>): void
+  public update(subject: Store<T>): void {
+    this.#callback(subject.state)
+  }
 }
 
 /**
@@ -390,17 +384,13 @@ declare class StoreObserver implements Observer<unknown> {
  * @return {StoreObserver}
  */
 // eslint-disable-next-line no-unused-vars
-export function useObserver<T = unknown>(callback: (prevState: T) => void): StoreObserver {
-  class _StoreObserver implements Observer<T> {
-    public update(subject: Store<T>): void {
-      callback(subject.state)
-    }
-  }
-
-  return new _StoreObserver() as StoreObserver
+export function useObserver<T = unknown>(callback: (prevState: T) => void): StoreObserver<T> {
+  return new StoreObserver(callback)
 }
 
 // Mark: StoreStack
+
+type SetterFunction<T = any> = (prevState: T) => T
 
 /**
  * A multi {@link Store} container.
@@ -416,10 +406,36 @@ export class StoreStack {
   }
 
   /**
+   * This method should only be called when the `StoreStack` is instantiated on the component level, and only in really
+   * specific circumstances globally when global observers are desirable.
+   *
+   * #### Example
+   * ```ts
+   * ...
+   * this.state =  StoreStack.attach([useObserver(() => this.requestUpdate())]);
+   * ...
+   * ```
+   *
+   * @param globalObservers An array of global observers
+   */
+  static attach<T>(globalObservers?: Observer<T>[]) {
+    return new StoreStack(globalObservers)
+  }
+
+  private constructor(globalObservers?: Observer<any>[]) {
+    globalObservers && (this.#globalObservers = globalObservers)
+  }
+
+  /**
    * @internal
    * Object containing all the stores.
    */
   #stores: Record<Pointer, AnyStore> = {}
+  /**
+   * @internal
+   * Object containing all the observers that should apply globally.
+   */
+  #globalObservers: Observer<any>[] = []
 
   /**
    * Adds a store to the memory stack and assigns it a pointer.
@@ -524,6 +540,42 @@ export class StoreStack {
     }
 
     return undefined
+  }
+
+  /**
+   * React-like method to use a store with a setter and a getter. This will not override an existing store, but it will
+   * update its observers.
+   *
+   * @param pointer The pointer to the store.
+   * @param defaultValue The default value if the store is not instantiated.
+   * @param observers Additional observers to attach to the store.
+   * @param useGlobalObserver If global observers are enabled.
+   */
+  public useState<T = any>({pointer, defaultValue, observers, useGlobalObserver}: {pointer: Pointer, defaultValue: T, observers?: Observer<T>[], useGlobalObserver?: boolean}): [() => T, (newState: T | SetterFunction<T>) => void] {
+    const concatObservers = (() => {
+      let temp: Observer<any>[] = []
+      /* istanbul ignore next */
+      observers && temp.push(...observers)
+      ;(useGlobalObserver as boolean | undefined) !== false && temp.push(...this.#globalObservers)
+
+      return [...temp]
+    })()
+
+    if (typeof this.#stores[pointer] === 'undefined') {
+      this.#stores[pointer] = new Store(defaultValue)
+    }
+
+    concatObservers.forEach(observer => this.#stores[pointer].attach(observer, true))
+
+    const setter = (newState: T | SetterFunction<T>) => {
+      if (typeof newState === 'function') {
+        return this.#stores[pointer].set((newState as ((prevState: T) => T))(window.structuredClone(this.#stores[pointer].state)))
+      } else {
+        this.#stores[pointer].set(newState)
+      }
+    }
+
+    return [() => this.#stores[pointer].state, setter]
   }
 }
 

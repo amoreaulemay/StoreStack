@@ -32,7 +32,7 @@ test('Testing NullPointerError', () => {
 
 // Mark: Testing setup
 test('The StoreStack should be able to be instantiated', () => {
-  const Stores = new mod.StoreStack()
+  const Stores = mod.StoreStack.attach()
 
   expect(Stores).toBeInstanceOf(mod.StoreStack)
 })
@@ -144,6 +144,9 @@ test('An observer can be attached only once', () => {
 
   store.attach(observer)
   expect(() => store.attach(observer)).toThrow(mod.DuplicateObserverError)
+
+  // But can be silently ignored
+  expect(() => store.attach(observer, true)).not.toThrow(mod.DuplicateObserverError)
 })
 
 test('An unattached observer cannot be removed', () => {
@@ -161,13 +164,13 @@ test('An unattached observer cannot be removed', () => {
 
 // Mark: StoreStack tests
 test('An instance of StoreStack can be instantiated', () => {
-  const stack = new mod.StoreStack() as unknown
+  const stack = mod.StoreStack.attach() as unknown
 
   expect(stack).toBeInstanceOf(mod.StoreStack)
 })
 
 test('A store can be added to a stack without providing a pointer, accessed with the returned pointer and can be removed', () => {
-  const stack = new mod.StoreStack()
+  const stack = mod.StoreStack.attach()
 
   const store = new mod.Store(0)
   const ptr = stack.addStore(store)
@@ -196,7 +199,7 @@ test('A store can be added to a stack without providing a pointer, accessed with
 })
 
 test('upsert test', () => {
-  const stack = new mod.StoreStack()
+  const stack = mod.StoreStack.attach()
 
   const pointer1 = nanoid()
 
@@ -311,6 +314,51 @@ test('useStore with pointer', () => {
       observers: [observer, observer], // Duplicate observers
     })
   }).toThrow(mod.DuplicateObserverError)
+})
+
+test('useObserver hooks', () => {
+  const startValue = 0
+  const finalValue = 1
+  let counter = startValue
+  const callback = (prevState: number) => counter = prevState
+  const observer = mod.useObserver(callback)
+  const store = new mod.Store(startValue)
+
+  expect(observer).toBeInstanceOf(mod.StoreObserver)
+  expect(store.state).toBe(startValue)
+  expect(counter).toBe(startValue)
+
+  store.attach(observer)
+  store.set(finalValue)
+
+  expect(store.state).toBe(finalValue)
+  expect(counter).toBe(finalValue)
+
+  store.detach(observer)
+})
+
+test('useState', () => {
+  const startValue = 0
+  const finalValue = 1
+  let counter = startValue
+  const callback = (prevState: number) => counter = prevState
+
+  const stack = mod.StoreStack.attach([mod.useObserver(callback)])
+  const [value, setter] = stack.useState({pointer: 'test', defaultValue: startValue})
+
+  expect(stack).toBeInstanceOf(mod.StoreStack)
+  expect(value()).toBe(startValue)
+  expect(counter).toBe(startValue)
+
+  setter(finalValue)
+
+  expect(value()).toBe(finalValue)
+  expect(counter).toBe(finalValue)
+
+  setter((prevState) => prevState + 1)
+
+  expect(value()).toBe(finalValue + 1)
+  expect(counter).toBe(finalValue + 1)
 })
 
 test('misc tests', () => {

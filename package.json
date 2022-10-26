@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc",
     "format": "prettier --write \"src/**/*.ts\"",
-    "test": "node --experimental-vm-modules ./node_modules/.bin/jest --config jestconfig.json",
+    "test": "node --experimental-vm-modules ./node_modules/.bin/jest --config jestconfig.json --coverage",
     "prepare": "husky install && yarn build",
     "prepublishOnly": "yarn test && yarn eslint",
     "preversion": "yarn eslint",
