@@ -426,6 +426,15 @@ export class StoreStack {
     globalObservers && (this.#globalObservers = globalObservers)
   }
 
+  /* istanbul ignore next */
+  /**
+   * Adds a global observer to the stack
+   * @param globalObservers
+   */
+  public addGlobalObserver<T>(...globalObservers: Observer<T>[]) {
+    this.#globalObservers = [...this.#globalObservers, ...globalObservers]
+  }
+
   /**
    * @internal
    * Object containing all the stores.
