@@ -118,6 +118,12 @@ export class Store<T> implements Subject<T> {
   #state: T
 
   /**
+   * @internal
+   * The internal representation of the previous state
+   */
+  #previousState: T | null = null
+
+  /**
    * A deep copy of the internal state, to prevent referenced objects to be directly mutated.
    *
    * @remarks
@@ -125,6 +131,10 @@ export class Store<T> implements Subject<T> {
    */
   public get state(): T {
     return window.structuredClone(this.#state) as T
+  }
+
+  public get prevState(): T | null {
+    return window.structuredClone(this.#previousState) as T | null
   }
 
   /**
@@ -194,6 +204,8 @@ export class Store<T> implements Subject<T> {
    */
   // eslint-disable-next-line no-unused-vars
   public set(options: T | ((prevState: T) => T)): void {
+    this.#previousState = window.structuredClone(this.#state)
+
     if (typeof options === 'function') {
       // eslint-disable-next-line no-unused-vars
       this.#state = window.structuredClone((options as (prevState: T) => T)(window.structuredClone(this.state) as T)) as T
@@ -366,14 +378,14 @@ export function useStore<T>(state: T, options?: StoreOptions<T>): Pointer {
  * Simple store observer implementation.
  */
 export class StoreObserver<T> implements Observer<T> {
-  #callback: (prevState: T) => void
-  constructor(callback: (prevState: T) => void) {
+  #callback: (currentState: T, previousState?: T | null) => void
+  constructor(callback: (currentState: T, previousState?: T | null) => void) {
     this.#callback = callback
   }
 
   // eslint-disable-next-line no-unused-vars
   public update(subject: Store<T>): void {
-    this.#callback(subject.state)
+    this.#callback(subject.state, subject.prevState)
   }
 }
 
