@@ -396,7 +396,7 @@ export class StoreObserver<T> implements Observer<T> {
  * @return {StoreObserver}
  */
 // eslint-disable-next-line no-unused-vars
-export function useObserver<T = unknown>(callback: (prevState: T) => void): StoreObserver<T> {
+export function useObserver<T = unknown>(callback: (currentState: T, prevState?: T | null) => void): StoreObserver<T> {
   return new StoreObserver(callback)
 }
 
